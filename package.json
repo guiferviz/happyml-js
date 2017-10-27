@@ -1,0 +1,14 @@
+{
+  "name": "happyml-js",
+  "version": "0.0.0",
+  "description": "Machine Learning JS library for academic purposes.",
+  "main": "src/main.js",
+  "repository": "https://github.com/guiferviz/happyml-js",
+  "author": "Guillermo Fernández <guiferviz@gmail.com>",
+  "devDependencies": {
+    "grunt": "^1.0.1",
+    "grunt-contrib-jshint": "^1.1.0",
+    "grunt-contrib-uglify": "^3.1.0",
+    "grunt-version": "^1.2.1"
+  }
+}
