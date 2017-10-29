@@ -26,12 +26,24 @@ module.exports = function(grunt) {
                     'build/happyml.min.js': ['src/**/*.js']
                 }
             }
+        },
+        'js-test': {
+            options: {
+                phantomOptions: {
+                    debug: true,
+                    timeout: 20000
+                },
+                coverage: true,
+                pattern: 'test/**/*.js'
+            }
         }
     });
 
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-version');
     grunt.loadNpmTasks('grunt-contrib-uglify');
+    grunt.loadNpmTasks('grunt-js-test');
 
     grunt.registerTask('default', ['version', 'jshint', 'uglify']);
+    grunt.registerTask('test', ['js-test']);
 };

@@ -18,4 +18,4 @@ var happyml = (function (module)
 	};
 
 	return module;
-}(happyml || module));
+}(happyml || {}));
