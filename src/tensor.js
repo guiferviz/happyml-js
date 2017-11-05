@@ -1,11 +1,12 @@
 
-var happyml = (function (module)
+module.exports = (function (m)
 {
 	var Tensor = function ()
 	{
 	    var size = 1;
-	    var idx = new Array(arguments.length);
-	    for (var i = 0; i < arguments.length; i++)
+	    var ndim = arguments.length;
+	    var idx = new Array(ndim);
+	    for (var i = 0; i < ndim; i++)
 	    {
 	    	var arg = arguments[i];
 	        if (arg <= 0)
@@ -18,6 +19,7 @@ var happyml = (function (module)
 	    }
 	    
 	    this._idx = idx;
+	    this._ndim = ndim;
 	    this._size = size;
 	    this._data = new Float32Array(size);
 	};
@@ -27,7 +29,17 @@ var happyml = (function (module)
 	    return this._size;
 	};
 
-	module.Tensor = Tensor;
+	Tensor.prototype.getNumDim = function ()
+	{
+	    return this._ndim;
+	};
 
-	return module;
-}(happyml || {}));
+	Tensor.prototype.getShape = function ()
+	{
+	    return this._idx.slice();
+	};
+
+	m.Tensor = Tensor;
+	
+	return m;
+}(module.exports));
