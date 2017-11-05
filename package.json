@@ -8,19 +8,21 @@
   "scripts": {
     "pretest": "npm run lint",
     "test": "mocha test/",
+    "test-coverage": "nyc --reporter=html npm t",
     "lint": "jshint src/ test/",
     "preuglify": "mkdir -p build",
     "uglify": "uglifyjs -b -o build/happyml.js $(cat src-file-list.txt)",
     "preuglify:min": "mkdir -p build",
     "uglify:min": "uglifyjs -m -c --source-map -o build/happyml.min.js $(cat src-file-list.txt)",
     "build": "npm run uglify && npm run uglify:min",
-    "all": "npm t && npm run build"
+    "all": "npm run test-coverage && npm run build"
   },
   "devDependencies": {
     "chai": "^4.1.2",
     "chai-arrays": "^2.0.0",
     "jshint": "^2.9.5",
     "mocha": "^4.0.1",
+    "nyc": "^11.3.0",
     "uglify-js": "^3.1.6"
   }
 }
