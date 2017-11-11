@@ -32,6 +32,11 @@ describe('tensor.js', function()
             var t = new Tensor(2, 3, 10);
             assert(t.getSize() == 60);
         });
+        it('should return correct size 0', function()
+        {
+            var t = new Tensor();
+            assert(t.getSize() == 0);
+        });
         it('should return correct length', function()
         {
             var t = new Tensor(12, 2);
@@ -56,6 +61,30 @@ describe('tensor.js', function()
         {
             var t1 = new Tensor(3, 2);
             var t2 = new Tensor(3, 2);
+        });
+    });
+    describe('set-get-index', function()
+    {
+        it('should return the correct index', function()
+        {
+            var t = new Tensor(3, 2);
+            assert(t.toIndex(2, 1) == 5);
+        });
+        it('should set the correct position', function()
+        {
+            var t = new Tensor(3, 2);
+            t.set(2, 1, 7);
+            for (var i = 0; i < t._size; ++i)
+                if (i == 5)
+                    assert(t._data[5] == 7);
+                else
+                    assert(t._data[i] == 0);
+        });
+        it('should get the correct position', function()
+        {
+            var t = new Tensor(3, 2);
+            t.set(2, 1, 7);
+            assert(t.get(2, 1) == 7);
         });
     });
 });
