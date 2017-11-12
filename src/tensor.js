@@ -1,6 +1,13 @@
 
 module.exports = (function (m)
 {
+	/**
+	 * Represents a Tensor.
+	 * 
+	 * @class Tensor
+	 * 
+	 * @param {...number} dims Tensor dimensions. Must be positive numbers.
+	 */
 	var Tensor = function ()
 	{
 	    var ndim = arguments.length;
@@ -27,21 +34,50 @@ module.exports = (function (m)
 	    this._data = new Float64Array(size);
 	};
 
+	/**
+	 * Return the size of the underlying data array.
+	 * 
+	 * @return {number} Size of the data array.
+	 */
 	Tensor.prototype.getSize = function ()
 	{
 	    return this._size;
 	};
 
+	/**
+	 * Return the number of dimensions.
+	 * 
+	 * @return {number} Number of dimensions.
+	 */
 	Tensor.prototype.getNumDim = function ()
 	{
 	    return this._ndim;
 	};
 
+	/**
+	 * Return the shape of the tensor.
+	 * 
+	 * @return {array} Shape of the tensor.
+	 */
 	Tensor.prototype.getShape = function ()
 	{
 	    return this._idx.slice();
 	};
 
+	/**
+	 * Set the given position of the tensor to the given value.
+	 * 
+	 * Example:
+	 *		var t = new Tensor(5, 5);
+	 *		// Set the center element to 7.
+	 *		t.set(
+	 *			2, // row
+	 *			2, // column
+	 *			7) // value
+	 * 
+	 * @param {...number} Coordinates on the tensor.
+	 * @param {number} Value.
+	 */
 	Tensor.prototype.set = function ()
 	{
 		var idx = this._toIndex(arguments);
@@ -74,15 +110,17 @@ module.exports = (function (m)
 	{
 		var out = "";
 		var idx = 0;
-		for (var d = this._ndim - 1; d >= 0; d++)
+		for (var d = this._ndim - 1; d >= 0; d--)
 		{
+			out += "[";
 			var dim_size = this._idx[d];
-			for (var i = 0; i < dim_size; ++i)
+			for (var i = 0; i < dim_size; i++)
 			{
 				out += this._data[idx++];
-				out += " ";
+				if (i != dim_size - 1)
+					out += ", ";
 			}
-			out += "\n";
+			out += "],\n";
 		}
 		
 		return out;

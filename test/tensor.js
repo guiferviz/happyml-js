@@ -87,4 +87,12 @@ describe('tensor.js', function()
             assert(t.get(2, 1) == 7);
         });
     });
+    describe('to string', function()
+    {
+        it('should return correct string', function()
+        {
+            var t = new Tensor(3, 2);
+            console.log(t.toString());
+        });
+    });
 });

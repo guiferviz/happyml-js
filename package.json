@@ -15,11 +15,13 @@
     "preuglify:min": "mkdir -p build",
     "uglify:min": "uglifyjs -m -c --source-map -o build/happyml.min.js $(cat src-file-list.txt)",
     "build": "npm run uglify && npm run uglify:min",
-    "all": "npm run test-coverage && npm run build"
+    "doc": "jsdoc src package.json -r -d ./docs && echo 'WARNING: Doc is not working properly'",
+    "all": "npm run test-coverage && npm run build && npm run doc"
   },
   "devDependencies": {
     "chai": "^4.1.2",
     "chai-arrays": "^2.0.0",
+    "jsdoc": "^3.5.5",
     "jshint": "^2.9.5",
     "mocha": "^4.0.1",
     "nyc": "^11.3.0",
