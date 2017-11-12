@@ -84,17 +84,35 @@ module.exports = (function (m)
 		this._data[idx] = arguments[arguments.length - 1];
 	};
 
+	/**
+	 * Return the value on given position.
+	 * 
+	 * @param {...number} Coordinates.
+	 * @return {number} Value in that position.
+	 */
 	Tensor.prototype.get = function ()
 	{
 		var idx = this._toIndex(arguments);
 		return this._data[idx];
 	};
 
+	/**
+	 * Coordinates to index in the underlying data array.
+	 * 
+	 * @param {...number} Coordinates.
+	 * @return {number} Index.
+	 */
 	Tensor.prototype.toIndex = function ()
 	{
 		return this._toIndex(arguments);
 	};
 
+	/**
+	 * Coordinates to index in the underlying data array.
+	 * 
+	 * @param {array} Coordinates array.
+	 * @return {number} Index.
+	 */
 	Tensor.prototype._toIndex = function (args)
 	{
 		var idx = 0;
@@ -106,24 +124,73 @@ module.exports = (function (m)
 		return idx;
 	};
 
+	/**
+	 * Return the coordinates of the given index in the underlying data array.
+	 * It is the inverse operation to toIndex.
+	 * 
+	 * @param {number} Index to convert.
+	 * @return {array} Coordinates of the index in the data array.
+	 */
+	Tensor.prototype.toCoordinates = function (idx)
+	{
+		var coordinates = new Array(this._ndim);
+		for (var i = 0; i < this._ndim; ++i)
+		{
+			var div = Math.floor(idx / this._csize[i]);
+			coordinates[i] = div;
+			idx -= div * this._csize[i];
+		}
+
+		return coordinates;
+	};
+
+	/**
+	 * Return a string representation of the tensor.
+	 * 
+	 * @return {string} Representation of the tensor.
+	 */
 	Tensor.prototype.toString = function ()
 	{
-		var out = "";
-		var idx = 0;
-		for (var d = this._ndim - 1; d >= 0; d--)
+		return this._toString(0, 0, "\n ").value;
+	};
+
+	Tensor.prototype._toString = function (dim, idx, scope)
+	{
+		// Base case.
+		if (dim == this._ndim)
+			return {
+				idx: idx + 1,
+				value: this._data[idx]
+			};
+
+		// Recursion.
+		var out = "[";
+		var dim_size = this._idx[dim];
+		for (var i = 0; i < dim_size; i++)
 		{
-			out += "[";
-			var dim_size = this._idx[d];
-			for (var i = 0; i < dim_size; i++)
-			{
-				out += this._data[idx++];
-				if (i != dim_size - 1)
+			var res = this._toString(dim + 1, idx, scope + " ");
+			idx = res.idx;
+			out += res.value;
+			if (i != dim_size - 1)  // if no last value of dimension
+				if (dim < this._ndim - 1)  // if no last dimension
+					out += "," + scope;
+				else  // if last dimension
 					out += ", ";
-			}
-			out += "],\n";
 		}
+		out += "]";
 		
-		return out;
+		return {
+			idx: idx,
+			value: out
+		};
+	};
+
+	/**
+	 * Print the string representation of the tensor.
+	 */
+	Tensor.prototype.print = function ()
+	{
+		console.log(this.toString());
 	};
 
 	m.Tensor = Tensor;

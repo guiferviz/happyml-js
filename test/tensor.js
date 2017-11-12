@@ -86,13 +86,27 @@ describe('tensor.js', function()
             t.set(2, 1, 7);
             assert(t.get(2, 1) == 7);
         });
+        it('should get the correct coordinates', function()
+        {
+            var t = new Tensor(3, 2);
+            var c = t.toCoordinates(3);
+            assert.isArray(c);
+            expect(c).to.be.equalTo([1, 1]);
+        });
     });
     describe('to string', function()
     {
         it('should return correct string', function()
         {
-            var t = new Tensor(3, 2);
-            console.log(t.toString());
+            var t = new Tensor(2, 2, 2);
+            assert(t.toString() == "[[[0, 0],\n  [0, 0]],\n [[0, 0],\n  [0, 0]]]");
+        });
+        it('should return correct string with values', function()
+        {
+            var t = new Tensor(1, 1, 2);
+            t._data[0] = 2;
+            t._data[1] = 3;
+            assert(t.toString() == "[[[2, 3]]]");
         });
     });
 });
