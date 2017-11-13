@@ -23,14 +23,32 @@ describe('tensor.js', function()
 
             expect(throwError).to.throw(Error);
         });
+        it('should throw and error (different dims same level)', function()
+        {
+            function throwError()
+            {
+                new Tensor([[1, 2], [3], [4]]);
+            }
+
+            expect(throwError).to.throw(Error);
+        });
         it('should return and object without errors (several args)', function()
         {
             new Tensor(2, 3, 4);
+        });
+        it('should return and object without errors (from array)', function()
+        {
+            new Tensor([0, 0, 0]);
         });
         it('should return correct size', function()
         {
             var t = new Tensor(2, 3, 10);
             assert(t.getSize() == 60);
+        });
+        it('should return correct size (from array)', function()
+        {
+            var t = new Tensor([[1, 2], [3, 4]]);
+            assert(t.getSize() == 4);
         });
         it('should return correct size 0', function()
         {

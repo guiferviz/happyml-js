@@ -6,33 +6,89 @@ module.exports = (function (m)
 	 * 
 	 * @class Tensor
 	 * 
-	 * @param {...number} dims Tensor dimensions. Must be positive numbers.
+	 * @param {...number} dims Tensor dimensions or data array.
 	 */
 	var Tensor = function ()
 	{
-	    var ndim = arguments.length;
-	    var idx = new Array(ndim);
-	    var cumulativeSize = new Array(ndim);
-	    var size = 1;
+	    if (typeof arguments[0] == "object")
+	    	this._initFromData(arguments[0]);
+	    else if (typeof arguments[0] == "number")
+	    	this._initFromDim(arguments);
+	    else
+	    	this._initFromDim([]);
+	};
+
+	Tensor.prototype._initFromDim = function (dimensions)
+	{
+		var ndim = dimensions.length;
+	    var dims = new Array(ndim);
+
+        // Check dims.
 	    for (var i = ndim - 1; i >= 0; i--)
 	    {
-	    	var arg = arguments[i];
+	    	var arg = dimensions[i];
 	        if (arg <= 0)
-	        {
 	        	throw new Error("Dimension must be positive");
-	        }
 
-	        cumulativeSize[i] = size;
-	        size *= arg;
-	        idx[i] = arg;
+	        dims[i] = arg;
 	    }
 
-	    this._idx = idx;
 	    this._ndim = ndim;
+	    this._dims = dims;
+	    this._setSize();
+	    this._data = new Float64Array(this._size);
+	};
+
+	Tensor.prototype._initFromData = function (data)
+	{
+	    this._dims = new Array(0);
+
+	    var flatten = [];
+	    this._parseData(data, flatten, 0);
+
+	    this._setSize();
+		this._data = new Float64Array(flatten);
+	};
+
+    Tensor.prototype._parseData = function (data, flatten, depth)
+    {
+        // Base case.
+        if (typeof data == "number")
+        {
+            flatten.push(data);
+            return;
+        }
+
+        // Recursion.
+        if (this._dims.length <= depth)
+            this._dims.push(data.length);
+        else if (this._dims[depth] != data.length)
+            throw new Error("Dimensions at the same level must match");
+        for (var i = 0; i < data.length; ++i)
+        {
+            this._parseData(data[i], flatten, depth + 1);
+        }
+    };
+
+    /**
+     * Set the total size and cumulative sizes.
+     */
+    Tensor.prototype._setSize = function ()
+    {
+        var size = 1;
+        var ndim = this._dims.length;
+	    var cumulativeSize = new Array(ndim);
+
+	    for (var i = ndim - 1; i >= 0; i--)
+	    {
+	    	cumulativeSize[i] = size;
+	        size *= this._dims[i];
+	    }
+
+        this._ndim = ndim;
 	    this._size = ndim == 0 ? 0 : size;
 	    this._csize = cumulativeSize;
-	    this._data = new Float64Array(size);
-	};
+    };
 
 	/**
 	 * Return the size of the underlying data array.
@@ -61,7 +117,7 @@ module.exports = (function (m)
 	 */
 	Tensor.prototype.getShape = function ()
 	{
-	    return this._idx.slice();
+	    return this._dims.slice();
 	};
 
 	/**
@@ -165,7 +221,7 @@ module.exports = (function (m)
 
 		// Recursion.
 		var out = "[";
-		var dim_size = this._idx[dim];
+		var dim_size = this._dims[dim];
 		for (var i = 0; i < dim_size; i++)
 		{
 			var res = this._toString(dim + 1, idx, scope + " ");
