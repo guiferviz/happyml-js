@@ -6,11 +6,18 @@ module.exports = (function (m)
 	 * 
 	 * @class Tensor
 	 * 
-	 * @param {...number} dims Tensor dimensions or data array.
+	 * @param {...number} dims Tensor dimensions.
+	 * 
+	 * @param {array} Data array.
+	 * 
+	 * @param {Tensor} Tensor to clone.
+	 * @param {boolean} Shadow copy.
 	 */
 	var Tensor = function ()
 	{
-	    if (typeof arguments[0] == "object")
+	    if (arguments[0] instanceof Tensor)
+	    	this._initCopy(arguments[0], arguments[1]);
+	    else if (arguments[0] instanceof Array)
 	    	this._initFromData(arguments[0]);
 	    else if (typeof arguments[0] == "number")
 	    	this._initFromDim(arguments);
@@ -18,6 +25,21 @@ module.exports = (function (m)
 	    	this._initFromDim([]);
 	};
 
+	Tensor.prototype._initCopy = function (tensor, shallow)
+	{
+		this._ndim = tensor._ndim;
+		this._dims = tensor._dims;
+	    this._size = tensor._size;
+	    this._csize = tensor._csize;
+	    if (shallow)
+	        this._data = tensor._data;
+	    else
+	    	this._data = tensor._data.slice();
+	};
+
+	/**
+	 * Init tensor from an array of dimensions.
+	 */
 	Tensor.prototype._initFromDim = function (dimensions)
 	{
 		var ndim = dimensions.length;
@@ -39,6 +61,10 @@ module.exports = (function (m)
 	    this._data = new Float64Array(this._size);
 	};
 
+	/**
+	 * Init tensor from an array of data.
+	 * Data must have same sizes through dimensions.
+	 */
 	Tensor.prototype._initFromData = function (data)
 	{
 	    this._dims = new Array(0);
@@ -50,6 +76,9 @@ module.exports = (function (m)
 		this._data = new Float64Array(flatten);
 	};
 
+	/**
+	 * Recursive function that reads data and inits tensor.
+	 */
     Tensor.prototype._parseData = function (data, flatten, depth)
     {
         // Base case.
@@ -247,6 +276,39 @@ module.exports = (function (m)
 	Tensor.prototype.print = function ()
 	{
 		console.log(this.toString());
+	};
+
+	/**
+	 * Depth copy of the tensor, that is, creates a new data array.
+	 * 
+	 * @returns {object} Depth copy of the tensor.
+	 */
+	Tensor.prototype.clone = function ()
+	{
+		return new Tensor(this, false);
+	};
+
+	/**
+	 * Shallow copy of the tensor, i.e., reuse the underlying data array.
+	 * 
+	 * @returns {object} Depth copy of the tensor.
+	 */
+	Tensor.prototype.shallowClone = function ()
+	{
+		return new Tensor(this, true);
+	};
+
+	Tensor.prototype.add = function (t)
+	{
+		// TODO: check dims.
+
+		var newTensor = new Tensor(this);
+		for (var i = 0; i < this._size; ++i)
+		{
+			newTensor._data[i] = this._data[i] + t._data[i];
+		}
+
+		return newTensor;
 	};
 
 	m.Tensor = Tensor;

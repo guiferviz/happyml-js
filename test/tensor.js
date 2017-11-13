@@ -83,6 +83,45 @@ describe('tensor.js', function()
             expect(s).to.be.equalTo([2, 3, 0]);
         });
     });
+    describe('clone', function()
+    {
+        it('shallow clone', function()
+        {
+            var t = new Tensor([1, 2]);
+            var tClone = t.shallowClone();
+            t.set(0, 0);
+            assert(tClone.get(0) == 0);
+        });
+        it('shallow clone constructor', function()
+        {
+            var t = new Tensor([1, 2]);
+            var tClone = new Tensor(t, true);
+            t.set(0, 0);
+            assert(tClone.get(0) == 0);
+        });
+        it('depth clone', function()
+        {
+            var t = new Tensor([1, 2]);
+            var tClone = t.clone();
+            t.set(0, 0);
+            assert(tClone.get(0) == 1);
+        });
+        it('depth clone constructor', function()
+        {
+            var t = new Tensor([1, 2]);
+            var tClone = new Tensor(t);
+            t.set(0, 0);
+            assert(tClone.get(0) == 1);
+        });
+        it('should return correct shape', function()
+        {
+            var t = new Tensor(7, 3, 5);
+            var tClone = t.clone();
+            var s = tClone.getShape();
+            assert.isArray(s);
+            expect(s).to.be.equalTo([7, 3, 5]);
+        });
+    });
     describe('algebra', function()
     {
         it('should return correct sum', function()
@@ -90,6 +129,8 @@ describe('tensor.js', function()
             var t1 = new Tensor([[1, 2], [3, 4]]);
             var t2 = new Tensor([[4, 3], [2, 1]]);
             var t3 = t1.add(t2);
+            assert(t3 instanceof Tensor);
+            expect(t3._data).to.be.equalTo([5, 5, 5, 5]);
         });
     });
     describe('set-get-index', function()
@@ -139,7 +180,10 @@ describe('tensor.js', function()
         });
         it('should call console.log', function()
         {
-            sinon.spy(console, 'log');
+            // Spy works similar, but does call the method.
+            //sinon.spy(console, 'log');
+            // Stub does not call the log, so no output is shown in console.
+            sinon.stub(console, 'log');
             var t = new Tensor([1, 2]);
             t.print();
             /* jshint expr:true */
