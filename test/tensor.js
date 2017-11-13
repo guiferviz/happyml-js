@@ -3,7 +3,10 @@ var chai = require("chai");
 var assert = chai.assert;
 var expect = chai.expect;
 var assertArrays = require('chai-arrays');
+var sinonChai = require('chai-sinon');
+var sinon = require('sinon');
 chai.use(assertArrays);
+chai.use(sinonChai);
 
 
 describe('tensor.js', function()
@@ -72,13 +75,21 @@ describe('tensor.js', function()
             assert.isArray(s);
             expect(s).to.be.equalTo([7, 3, 5]);
         });
+        it('should return correct shape (from array)', function()
+        {
+            var t = new Tensor([[[],[],[]],[[],[],[]]]);
+            var s = t.getShape();
+            assert.isArray(s);
+            expect(s).to.be.equalTo([2, 3, 0]);
+        });
     });
     describe('algebra', function()
     {
-        it('should return correct length', function()
+        it('should return correct sum', function()
         {
-            var t1 = new Tensor(3, 2);
-            var t2 = new Tensor(3, 2);
+            var t1 = new Tensor([[1, 2], [3, 4]]);
+            var t2 = new Tensor([[4, 3], [2, 1]]);
+            var t3 = t1.add(t2);
         });
     });
     describe('set-get-index', function()
@@ -125,6 +136,15 @@ describe('tensor.js', function()
             t._data[0] = 2;
             t._data[1] = 3;
             assert(t.toString() == "[[[2, 3]]]");
+        });
+        it('should call console.log', function()
+        {
+            sinon.spy(console, 'log');
+            var t = new Tensor([1, 2]);
+            t.print();
+            /* jshint expr:true */
+            expect(console.log).to.be.called;
+            console.log.restore();
         });
     });
 });

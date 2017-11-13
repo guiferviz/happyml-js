@@ -5,7 +5,9 @@
   "main": "src/main.js",
   "repository": "https://github.com/guiferviz/happyml-js",
   "author": "Guillermo Fernández <guiferviz@gmail.com>",
-  "keywords": ["machine learning"],
+  "keywords": [
+    "machine learning"
+  ],
   "scripts": {
     "pretest": "npm run lint",
     "test": "mocha test/",
@@ -22,10 +24,12 @@
   "devDependencies": {
     "chai": "^4.1.2",
     "chai-arrays": "^2.0.0",
+    "chai-sinon": "^2.8.1",
     "jsdoc": "^3.5.5",
     "jshint": "^2.9.5",
     "mocha": "^4.0.1",
     "nyc": "^11.3.0",
+    "sinon": "^4.1.2",
     "uglify-js": "^3.1.6"
   }
 }
