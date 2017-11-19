@@ -28,7 +28,7 @@ module.exports = (function (m)
 	Tensor.prototype._initCopy = function (tensor, shallow)
 	{
 		this._ndim = tensor._ndim;
-		this._dims = tensor._dims;
+		this._shape = tensor._shape;
 	    this._size = tensor._size;
 	    this._csize = tensor._csize;
 	    if (shallow)
@@ -56,7 +56,7 @@ module.exports = (function (m)
 	    }
 
 	    this._ndim = ndim;
-	    this._dims = dims;
+	    this._shape = dims;
 	    this._setSize();
 	    this._data = new Float64Array(this._size);
 	};
@@ -67,7 +67,7 @@ module.exports = (function (m)
 	 */
 	Tensor.prototype._initFromData = function (data)
 	{
-	    this._dims = new Array(0);
+	    this._shape = new Array(0);
 
 	    var flatten = [];
 	    this._parseData(data, flatten, 0);
@@ -89,9 +89,9 @@ module.exports = (function (m)
         }
 
         // Recursion.
-        if (this._dims.length <= depth)
-            this._dims.push(data.length);
-        else if (this._dims[depth] != data.length)
+        if (this._shape.length <= depth)
+            this._shape.push(data.length);
+        else if (this._shape[depth] != data.length)
             throw new Error("Dimensions at the same level must match");
         for (var i = 0; i < data.length; ++i)
         {
@@ -105,13 +105,13 @@ module.exports = (function (m)
     Tensor.prototype._setSize = function ()
     {
         var size = 1;
-        var ndim = this._dims.length;
+        var ndim = this._shape.length;
 	    var cumulativeSize = new Array(ndim);
 
 	    for (var i = ndim - 1; i >= 0; i--)
 	    {
 	    	cumulativeSize[i] = size;
-	        size *= this._dims[i];
+	        size *= this._shape[i];
 	    }
 
         this._ndim = ndim;
@@ -146,14 +146,14 @@ module.exports = (function (m)
 	 */
 	Tensor.prototype.getShape = function ()
 	{
-	    return this._dims.slice();
+	    return this._shape.slice();
 	};
 
 	/**
 	 * Set the given position of the tensor to the given value.
 	 * 
 	 * Example:
-	 *		var t = new Tensor(5, 5);
+	 *		var t = new Tensor(6, 6);
 	 *		// Set the center element to 7.
 	 *		t.set(
 	 *			2, // row
@@ -250,7 +250,7 @@ module.exports = (function (m)
 
 		// Recursion.
 		var out = "[";
-		var dim_size = this._dims[dim];
+		var dim_size = this._shape[dim];
 		for (var i = 0; i < dim_size; i++)
 		{
 			var res = this._toString(dim + 1, idx, scope + " ");
@@ -306,6 +306,66 @@ module.exports = (function (m)
 		for (var i = 0; i < this._size; ++i)
 		{
 			newTensor._data[i] = this._data[i] + t._data[i];
+		}
+
+		return newTensor;
+	};
+
+	Tensor.prototype.subtract = function (t)
+	{
+		// TODO: check dims.
+
+		var newTensor = new Tensor(this);
+		for (var i = 0; i < this._size; ++i)
+		{
+			newTensor._data[i] = this._data[i] - t._data[i];
+		}
+
+		return newTensor;
+	};
+
+	Tensor.prototype.apply = function (func)
+	{
+		var newTensor = new Tensor(this);
+		for (var i = 0; i < this._size; ++i)
+		{
+			newTensor._data[i] = func(this._data[i]);
+		}
+
+		return newTensor;
+	};
+
+	Tensor.prototype.dot = function (t)
+	{
+		// A.dot(B), A = this, B = t
+		var dimA = this._ndim - 1;
+		var dimB = t._ndim - 2 >= 0 ? t._ndim - 2 : 0;
+		var cSizeA = this._csize[dimA];
+		var cSizeB = t._csize[dimB];
+		console.assert(this._shape[dimA] == t._shape[dimB]);
+
+		// Compute output shape.
+		var outputShape = [];
+		for (var i = 0; i < dimA; ++i)
+			outputShape.push(this._shape[i]);
+		for (i = 0; i < dimB; ++i)
+			outputShape.push(t._shape[i]);
+		if (dimB + 1 < t._ndim)
+			outputShape.push(t._shape[dimB + 1]);
+		if (outputShape.length == 0)
+			outputShape.push(1);
+
+		var newTensor = new Tensor(...outputShape);
+		//for (each super dimension combination)
+		{
+			var idx = 0;
+			// Compute and save dot product.
+			var sum = 0;
+			for (i = 0; i < t._shape[0]; ++i)
+			{
+				sum += this._data[idx + i * cSizeA] * t._data[idx + i * cSizeB];
+			}
+			newTensor._data[idx] = sum;
 		}
 
 		return newTensor;
