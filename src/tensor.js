@@ -6,6 +6,20 @@ module.exports = (function (m)
 	 * 
 	 * @class Tensor
 	 * 
+	 * @prop {array} _data: flatten array with all the data of the tensor.
+	 * @prop {number} _size: total number of elements of the tensor. The length
+	 *		of _data is not always _size.
+	 * @prop {array} _shape: shape (array with the size of each dimension) of
+	 *		the tensor.
+	 * @prop {number} _ndims: number of dimensions.
+	 * @prop {array} _increments: the number of items to add from moving to one
+	 *		element to the consecutive one.
+	 * @prop {number} _offset: offset of the first element of the tensor in the
+	 *		_data array.
+	 * @prop {boolean} _owns_data: indicates whether the underlying array is
+	 *		specific of the current tensor or borrowed from another tensor.
+	 * 
+	 * 
 	 * @param {...number} dims Tensor dimensions.
 	 * 
 	 * @param {array} Data array.
@@ -20,44 +34,60 @@ module.exports = (function (m)
 	    else if (arguments[0] instanceof Array)
 	    	this._initFromData(arguments[0]);
 	    else if (typeof arguments[0] == "number")
-	    	this._initFromDim(arguments);
+	    	this._initFromShape(arguments);
 	    else
-	    	this._initFromDim([]);
-	};
-
-	Tensor.prototype._initCopy = function (tensor, shallow)
-	{
-		this._ndim = tensor._ndim;
-		this._shape = tensor._shape;
-	    this._size = tensor._size;
-	    this._csize = tensor._csize;
-	    if (shallow)
-	        this._data = tensor._data;
-	    else
-	    	this._data = tensor._data.slice();
+	    {
+	    	this._data = null;
+	    	this._size = 0;
+	    	this._shape = [];
+	    	this._ndims = 0;
+	    	this._increments = [];
+	    	this._offset = 0;
+	    }
 	};
 
 	/**
-	 * Init tensor from an array of dimensions.
+	 * Create a copy from other tensor.
+	 * Shallow copy uses a reference for the underlying data array,
+	 * deep copies make a copy of that array.
+	 * 
+	 * @param {Tensor} Tensor to clone.
+	 * @param {boolean} If true, shallow copy, else deep copy.
 	 */
-	Tensor.prototype._initFromDim = function (dimensions)
+	Tensor.prototype._initCopy = function (tensor, shallow)
 	{
-		var ndim = dimensions.length;
-	    var dims = new Array(ndim);
+	    this._size = tensor._size;
+		this._shape = tensor._shape;
+		this._ndims = tensor._ndims;
+	    this._increments = tensor._increments;
+	    this._offset = tensor._offset;
+	    // shallow or deep copy
+	    this._data = shallow ? tensor._data : tensor._data.slice();
+	};
+
+	/**
+	 * Init tensor from an array of dimensions: a shape.
+	 * 
+	 * @param {array} List of dimensions.
+	 */
+	Tensor.prototype._initFromShape = function (newShape)
+	{
+		var ndims = newShape.length;
+	    var shape = new Array(ndims);
 
         // Check dims.
-	    for (var i = ndim - 1; i >= 0; i--)
+	    for (var i = ndims - 1; i >= 0; i--)
 	    {
-	    	var arg = dimensions[i];
+	    	var arg = newShape[i];
 	        if (arg <= 0)
 	        	throw new Error("Dimension must be positive");
 
-	        dims[i] = arg;
+	        shape[i] = arg;
 	    }
 
-	    this._ndim = ndim;
-	    this._shape = dims;
-	    this._setSize();
+	    this._shape = shape;
+	    this._offset = 0;
+	    this._setShape();
 	    this._data = new Float64Array(this._size);
 	};
 
@@ -72,7 +102,8 @@ module.exports = (function (m)
 	    var flatten = [];
 	    this._parseData(data, flatten, 0);
 
-	    this._setSize();
+	    this._setShape();
+	    this._offset = 0;
 		this._data = new Float64Array(flatten);
 	};
 
@@ -102,21 +133,23 @@ module.exports = (function (m)
     /**
      * Set the total size and cumulative sizes.
      */
-    Tensor.prototype._setSize = function ()
+    Tensor.prototype._setShape = function ()
     {
         var size = 1;
-        var ndim = this._shape.length;
-	    var cumulativeSize = new Array(ndim);
+        var ndims = this._shape.length;
+	    var increments = new Array(ndims);
 
-	    for (var i = ndim - 1; i >= 0; i--)
+	    for (var i = ndims - 1; i >= 0; i--)
 	    {
-	    	cumulativeSize[i] = size;
+	    	increments[i] = size;
 	        size *= this._shape[i];
 	    }
 
-        this._ndim = ndim;
-	    this._size = ndim == 0 ? 0 : size;
-	    this._csize = cumulativeSize;
+		// TODO: check sizes are the same.
+
+        this._ndims = ndims;
+	    this._size = ndims == 0 ? 0 : size;
+	    this._increments = increments;
     };
 
 	/**
@@ -134,9 +167,9 @@ module.exports = (function (m)
 	 * 
 	 * @return {number} Number of dimensions.
 	 */
-	Tensor.prototype.getNumDim = function ()
+	Tensor.prototype.getNumDims = function ()
 	{
-	    return this._ndim;
+	    return this._ndims;
 	};
 
 	/**
@@ -200,10 +233,10 @@ module.exports = (function (m)
 	 */
 	Tensor.prototype._toIndex = function (args)
 	{
-		var idx = 0;
-		for (var i = this._ndim - 1; i >= 0; i--)
+		var idx = this._offset;
+		for (var i = this._ndims - 1; i >= 0; i--)
 		{
-			idx += this._csize[i] * args[i];
+			idx += this._increments[i] * args[i];
 		}
 
 		return idx;
@@ -218,15 +251,73 @@ module.exports = (function (m)
 	 */
 	Tensor.prototype.toCoordinates = function (idx)
 	{
-		var coordinates = new Array(this._ndim);
-		for (var i = 0; i < this._ndim; ++i)
+		var coordinates = new Array(this._ndims);
+		for (var i = 0; i < this._ndims; ++i)
 		{
-			var div = Math.floor(idx / this._csize[i]);
+			var div = Math.floor(idx / this._increments[i]);
 			coordinates[i] = div;
-			idx -= div * this._csize[i];
+			idx -= div * this._increments[i];
 		}
 
 		return coordinates;
+	};
+
+	Tensor.prototype.next = function (coords, idx)
+	{
+		for (var i = this._ndims - 1; i >= 0; --i)
+		{
+			if (coords[i] == -1)
+				continue;
+			else if (++coords[i] == this._shape[i])
+			{
+				coords[i] = 0;
+				if (i == 0)
+					return -1;
+			}
+			else
+			{
+				var inc = this._increments[i];
+				return idx + inc - idx % inc;
+			}
+		}
+
+		return -1;
+	};
+
+	Tensor.prototype.reshape = function ()
+	{
+		this._reshape(arguments);
+	};
+
+	Tensor.prototype._reshape = function (newShape)
+	{
+		var inferSize = -1;
+
+		var size = 1;
+		var ndims = newShape.length;
+		var shape = new Array(ndims);
+		for (var i = ndims - 1; i >= 0; --i)
+			if (newShape[i] == -1)
+			{
+				if (inferSize != -1)
+					throw new Error("More than one inferred dimension");
+				inferSize = i;
+			}
+			else
+				size *= newShape[i];
+
+		if (inferSize != -1)
+		{
+			var inferredSize = this._size / size;
+			size = this._size;
+			shape[inferSize] = inferredSize;
+		}
+
+		if (size != this._size)
+			throw new Error("Size must be the same after reshape");
+
+		this._shape = shape;
+		this._setShape();
 	};
 
 	/**
@@ -242,7 +333,7 @@ module.exports = (function (m)
 	Tensor.prototype._toString = function (dim, idx, scope)
 	{
 		// Base case.
-		if (dim == this._ndim)
+		if (dim == this._ndims)
 			return {
 				idx: idx + 1,
 				value: this._data[idx]
@@ -257,7 +348,7 @@ module.exports = (function (m)
 			idx = res.idx;
 			out += res.value;
 			if (i != dim_size - 1)  // if no last value of dimension
-				if (dim < this._ndim - 1)  // if no last dimension
+				if (dim < this._ndims - 1)  // if no last dimension
 					out += "," + scope;
 				else  // if last dimension
 					out += ", ";
@@ -326,11 +417,13 @@ module.exports = (function (m)
 
 	Tensor.prototype.apply = function (func)
 	{
-		var newTensor = new Tensor(this);
-		for (var i = 0; i < this._size; ++i)
-		{
-			newTensor._data[i] = func(this._data[i]);
+		var newTensor = new Tensor(...this._shape);
+		var coord = new Array(this._ndims).fill(0);
+		var idx = this._offset;
+		do {
+			newTensor._data[idx] = func(this._data[idx]);
 		}
+		while ((idx = this.next(coord, idx)) != -1);
 
 		return newTensor;
 	};
@@ -338,10 +431,10 @@ module.exports = (function (m)
 	Tensor.prototype.dot = function (t)
 	{
 		// A.dot(B), A = this, B = t
-		var dimA = this._ndim - 1;
-		var dimB = t._ndim - 2 >= 0 ? t._ndim - 2 : 0;
-		var cSizeA = this._csize[dimA];
-		var cSizeB = t._csize[dimB];
+		var dimA = this._ndims - 1;
+		var dimB = t._ndims - 2 >= 0 ? t._ndims - 2 : 0;
+		var cSizeA = this._increments[dimA];
+		var cSizeB = t._increments[dimB];
 		console.assert(this._shape[dimA] == t._shape[dimB]);
 
 		// Compute output shape.
@@ -350,23 +443,36 @@ module.exports = (function (m)
 			outputShape.push(this._shape[i]);
 		for (i = 0; i < dimB; ++i)
 			outputShape.push(t._shape[i]);
-		if (dimB + 1 < t._ndim)
+		if (dimB + 1 < t._ndims)
 			outputShape.push(t._shape[dimB + 1]);
 		if (outputShape.length == 0)
 			outputShape.push(1);
 
 		var newTensor = new Tensor(...outputShape);
-		//for (each super dimension combination)
+		var coordA = new Array(this._ndims).fill(0);
+		coordA[dimA] = -1;
+		var idxA = this._offset;
+		var coordB = new Array(t._ndims).fill(0);
+		coordB[dimB] = -1;
+		var coordNew = new Array(newTensor._ndims).fill(0);
+		var idxNew = newTensor._offset;
+		do
 		{
-			var idx = 0;
-			// Compute and save dot product.
-			var sum = 0;
-			for (i = 0; i < t._shape[0]; ++i)
+			var idxB = t._offset;
+			do
 			{
-				sum += this._data[idx + i * cSizeA] * t._data[idx + i * cSizeB];
+				var sum = 0;
+				for (i = 0; i < this._shape[dimA]; ++i)
+				{
+					sum += this._data[idxA + i * cSizeA] *
+				    		  t._data[idxB + i * cSizeB];
+				}
+				newTensor._data[idxNew] = sum;
+				idxNew = newTensor.next(coordNew, idxNew);
 			}
-			newTensor._data[idx] = sum;
+			while ((idxB = t.next(coordB, idxB)) != -1);
 		}
+		while ((idxA = this.next(coordA, idxA)) != -1);
 
 		return newTensor;
 	};

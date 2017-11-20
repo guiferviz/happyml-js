@@ -66,7 +66,7 @@ describe('tensor.js', function()
         it('should return correct number of dimensions', function()
         {
             var t = new Tensor(1, 2, 3, 4, 5);
-            assert(t.getNumDim() == 5);
+            assert(t.getNumDims() == 5);
         });
         it('should return correct shape', function()
         {
@@ -83,37 +83,37 @@ describe('tensor.js', function()
             expect(s).to.be.equalTo([2, 3, 0]);
         });
     });
-    describe('clone', function()
+    describe('copy', function()
     {
-        it('shallow clone', function()
+        it('shallow copy', function()
         {
             var t = new Tensor([1, 2]);
             var tClone = t.shallowClone();
             t.set(0, 0);
             assert(tClone.get(0) == 0);
         });
-        it('shallow clone constructor', function()
+        it('shallow copy constructor', function()
         {
             var t = new Tensor([1, 2]);
             var tClone = new Tensor(t, true);
             t.set(0, 0);
             assert(tClone.get(0) == 0);
         });
-        it('depth clone', function()
+        it('deep copy', function()
         {
             var t = new Tensor([1, 2]);
             var tClone = t.clone();
             t.set(0, 0);
             assert(tClone.get(0) == 1);
         });
-        it('depth clone constructor', function()
+        it('deep copy constructor', function()
         {
             var t = new Tensor([1, 2]);
             var tClone = new Tensor(t);
             t.set(0, 0);
             assert(tClone.get(0) == 1);
         });
-        it('should return correct shape', function()
+        it('copies should return correct shape', function()
         {
             var t = new Tensor(7, 3, 5);
             var tClone = t.clone();
@@ -161,8 +161,8 @@ describe('tensor.js', function()
             var t2 = new Tensor([3, 2, 1]);
             var t3 = t1.dot(t2);
             assert(t3 instanceof Tensor);
-            expect(t3._data).to.be.equalTo([10]);
             expect(t3.getShape()).to.be.equalTo([1]);
+            expect(t3._data).to.be.equalTo([10]);
             // t1 and t2 must be intact.
             expect(t1._data).to.be.equalTo([1, 2, 3]);
             expect(t1.getShape()).to.be.equalTo([3]);
@@ -175,8 +175,8 @@ describe('tensor.js', function()
             var t2 = new Tensor([3, 2, 1]);
             var t3 = t1.dot(t2);
             assert(t3 instanceof Tensor);
-            expect(t3._data).to.be.equalTo([10, 10]);
             expect(t3.getShape()).to.be.equalTo([2]);
+            expect(t3._data).to.be.equalTo([10, 10]);
             // t1 and t2 must be intact.
             expect(t1._data).to.be.equalTo([1, 2, 3, 1, 2, 3]);
             expect(t1.getShape()).to.be.equalTo([2, 3]);
@@ -189,13 +189,48 @@ describe('tensor.js', function()
             var t2 = new Tensor([[2, 1], [2, 1], [2, 1]]);
             var t3 = t1.dot(t2);
             assert(t3 instanceof Tensor);
-            expect(t3._data).to.be.equalTo([12, 6, 12, 6]);
             expect(t3.getShape()).to.be.equalTo([2, 2]);
+            expect(t3._data).to.be.equalTo([12, 6, 12, 6]);
             // t1 and t2 must be intact.
             expect(t1._data).to.be.equalTo([1, 2, 3, 1, 2, 3]);
             expect(t1.getShape()).to.be.equalTo([2, 3]);
             expect(t2._data).to.be.equalTo([2, 1, 2, 1, 2, 1]);
             expect(t2.getShape()).to.be.equalTo([3, 2]);
+        });
+    });
+    describe('shapes', function()
+    {
+        it('correct reshape', function()
+        {
+            var t = new Tensor(2, 3, 1);
+            t.reshape(3, 2);
+            expect(t.getShape()).to.be.equalTo([3, 2]);
+        });
+        it('size must be the same after reshape', function()
+        {
+            function throwError()
+            {
+                var t = new Tensor(2, 3, 2);
+                t.reshape(3, 2);
+            }
+
+            expect(throwError).to.throw(Error);
+        });
+        it('infer size', function()
+        {
+            var t = new Tensor(2, 3);
+            t.reshape(3, -1);
+            expect(t.getShape()).to.be.equalTo([3, 2]);
+        });
+        it('infer more than one size', function()
+        {
+            function throwError()
+            {
+                var t = new Tensor(2, 3);
+                t.reshape(3, -1, -1);
+            }
+
+            expect(throwError).to.throw(Error);
         });
     });
     describe('set-get-index', function()
