@@ -263,6 +263,32 @@ describe('tensor.js', function()
             assert.isArray(c);
             expect(c).to.be.equalTo([1, 1]);
         });
+        it('should return correct tensor', function()
+        {
+            var t = new Tensor([[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]);
+            var slice = t.slice(-1, 3);
+            assert(slice instanceof Tensor);
+            assert(slice.getSize() == 3);
+            assert(slice._offset == 3);
+            expect(slice.getShape()).to.be.equalTo([3]);
+            expect(slice._increments).to.be.equalTo([4]);
+            var data = [];
+            function addData(a) { data.push(a); return a; }
+            slice.apply(addData);
+            expect(data).to.be.equalTo([3, 7, 11]);
+        });
+        it('should return correct transpose', function()
+        {
+            var t = new Tensor([[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]);
+            var tt = t.transpose();
+            assert(tt instanceof Tensor);
+            assert(tt.getSize() == 12);
+            expect(tt.getShape()).to.be.equalTo([4, 3]);
+            assert(tt.get(0, 1) == 4);
+            // t must be intact.
+            expect(t.getShape()).to.be.equalTo([3, 4]);
+            assert(t.get(0, 1) == 1);
+        });
     });
     describe('to string', function()
     {

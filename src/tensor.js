@@ -57,9 +57,9 @@ module.exports = (function (m)
 	Tensor.prototype._initCopy = function (tensor, shallow)
 	{
 	    this._size = tensor._size;
-		this._shape = tensor._shape;
+		this._shape = tensor._shape.slice();
 		this._ndims = tensor._ndims;
-	    this._increments = tensor._increments;
+	    this._increments = tensor._increments.slice();
 	    this._offset = tensor._offset;
 	    // shallow or deep copy
 	    this._data = shallow ? tensor._data : tensor._data.slice();
@@ -214,6 +214,42 @@ module.exports = (function (m)
 		return this._data[idx];
 	};
 
+	Tensor.prototype.slice = function ()
+	{
+		return this._slice(arguments);
+	};
+
+	Tensor.prototype._slice = function (coords)
+	{
+		var newTensor = new Tensor();
+		var newShape = [];
+		var newIncrements = [];
+		var size = 1;
+		for (var i = 0; i < coords.length; ++i)
+		{
+			if (coords[i] == -1)
+			{
+				size *= this._shape[i];
+				newShape.push(this._shape[i]);
+				newIncrements.push(this._increments[i]);
+			}
+		}
+		var offset = 0;
+		for (var j = coords.length - 1; j >= 0 && coords[j] != -1; --j)
+		{
+			offset += this._increments[j - 1] - 1;
+		}
+
+		newTensor._data = this._data;
+		newTensor._size = size;
+		newTensor._shape = newShape;
+		newTensor._ndims = newShape.length;
+		newTensor._increments = newIncrements;
+		newTensor._offset = offset;
+
+		return newTensor;
+	};
+
 	/**
 	 * Coordinates to index in the underlying data array.
 	 * 
@@ -262,6 +298,15 @@ module.exports = (function (m)
 		return coordinates;
 	};
 
+	Tensor.prototype.transpose = function ()
+	{
+		var newTensor = new Tensor(this, false);
+		newTensor._shape.reverse();
+		newTensor._increments.reverse();
+
+		return newTensor;
+	};
+
 	Tensor.prototype.next = function (coords, idx)
 	{
 		for (var i = this._ndims - 1; i >= 0; --i)
@@ -271,13 +316,14 @@ module.exports = (function (m)
 			else if (++coords[i] == this._shape[i])
 			{
 				coords[i] = 0;
+				if (i > 0)
+					idx -= this._increments[i - 1] - 1;
 				if (i == 0)
 					return -1;
 			}
 			else
 			{
-				var inc = this._increments[i];
-				return idx + inc - idx % inc;
+				return idx + this._increments[i];
 			}
 		}
 
@@ -391,39 +437,47 @@ module.exports = (function (m)
 
 	Tensor.prototype.add = function (t)
 	{
-		// TODO: check dims.
-
-		var newTensor = new Tensor(this);
-		for (var i = 0; i < this._size; ++i)
-		{
-			newTensor._data[i] = this._data[i] + t._data[i];
-		}
-
-		return newTensor;
+		return this.apply2(t, function (a, b) { return a + b; });
 	};
 
 	Tensor.prototype.subtract = function (t)
 	{
-		// TODO: check dims.
-
-		var newTensor = new Tensor(this);
-		for (var i = 0; i < this._size; ++i)
-		{
-			newTensor._data[i] = this._data[i] - t._data[i];
-		}
-
-		return newTensor;
+		return this.apply2(t, function (a, b) { return a - b; });
 	};
 
 	Tensor.prototype.apply = function (func)
 	{
 		var newTensor = new Tensor(...this._shape);
+		var coordNew = new Array(newTensor._ndims).fill(0);
+		var idxNew = newTensor._offset;
 		var coord = new Array(this._ndims).fill(0);
 		var idx = this._offset;
-		do {
-			newTensor._data[idx] = func(this._data[idx]);
+		do
+		{
+			newTensor._data[idxNew] = func(this._data[idx]);
 		}
-		while ((idx = this.next(coord, idx)) != -1);
+		while ((idx = this.next(coord, idx)) != -1 &&
+		       (idxNew = newTensor.next(coordNew, idxNew)) != -1);
+
+		return newTensor;
+	};
+
+	Tensor.prototype.apply2 = function (t, func)
+	{
+		var newTensor = new Tensor(...this._shape);
+		var coordNew = new Array(newTensor._ndims).fill(0);
+		var idxNew = newTensor._offset;
+		var coordA = new Array(this._ndims).fill(0);
+		var idxA = this._offset;
+		var coordB = new Array(t._ndims).fill(0);
+		var idxB = t._offset;
+		do
+		{
+			newTensor._data[idxNew] = func(this._data[idxA], t._data[idxB]);
+		}
+		while ((idxA = this.next(coordA, idxA)) != -1 &&
+		       (idxB = t.next(coordB, idxB)) != -1 &&
+		       (idxNew = newTensor.next(coordNew, idxNew)) != -1);
 
 		return newTensor;
 	};
