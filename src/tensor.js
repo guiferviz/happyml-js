@@ -29,7 +29,7 @@ module.exports = (function (m)
 	 */
 	var Tensor = function ()
 	{
-	    if (arguments[0] instanceof Tensor)
+		if (arguments[0] instanceof Tensor)
 	    	this._initCopy(arguments[0], arguments[1]);
 	    else if (arguments[0] instanceof Array)
 	    	this._initFromData(arguments[0]);
@@ -37,13 +37,28 @@ module.exports = (function (m)
 	    	this._initFromShape(arguments);
 	    else
 	    {
-	    	this._data = null;
-	    	this._size = 0;
-	    	this._shape = [];
-	    	this._ndims = 0;
-	    	this._increments = [];
-	    	this._offset = 0;
-	    }
+			var params = arguments[0] || {};
+			if (!!params.data)
+			{
+				this._initFromData(params.data);
+				if (!!params.shape)
+					this._reshape(params.shape);
+			}
+			else if (!!params.shape)
+				this._initFromShape(params.shape);
+			else
+				this._initVoid();
+		}
+	};
+
+	Tensor.prototype._initVoid = function ()
+	{
+		this._data = null;
+    	this._size = 0;
+    	this._shape = [];
+    	this._ndims = 0;
+    	this._increments = [];
+    	this._offset = 0;
 	};
 
 	/**
@@ -460,7 +475,7 @@ module.exports = (function (m)
 
 	Tensor.prototype.apply = function (func)
 	{
-		var newTensor = new Tensor(...this._shape);
+		var newTensor = new Tensor({shape: this._shape});
 		var idxNew = 0;
 		var coord = new Array(this._ndims).fill(0);
 		var idx = this._offset;
@@ -475,7 +490,7 @@ module.exports = (function (m)
 
 	Tensor.prototype.apply2 = function (t, func)
 	{
-		var newTensor = new Tensor(...this._shape);
+		var newTensor = new Tensor({shape: this._shape});
 		var idxNew = 0;
 		var coordA = new Array(this._ndims).fill(0);
 		var idxA = this._offset;
@@ -511,7 +526,7 @@ module.exports = (function (m)
 		if (outputShape.length == 0)
 			outputShape.push(1);
 
-		var newTensor = new Tensor(...outputShape);
+		var newTensor = new Tensor({shape: outputShape});
 		var idxNew = 0;
 		var coordA = new Array(this._ndims).fill(0);
 		coordA[dimA] = -1;

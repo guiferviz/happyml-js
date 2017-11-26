@@ -11,7 +11,7 @@ module.exports = (function (happyml)
 	/**
 	 * Version string.
 	 */
-	happyml.version = '0.0.0';
+	happyml.version = '0.0.1';
 
 	/**
 	 * Say hello!

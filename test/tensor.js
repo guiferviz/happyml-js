@@ -53,6 +53,11 @@ describe('tensor.js', function()
             var t = new Tensor([[1, 2], [3, 4]]);
             assert(t.getSize() == 4);
         });
+        it('should return correct size (from object)', function()
+        {
+            var t = new Tensor([[1, 2], [3, 4]]);
+            assert(t.getSize() == 4);
+        });
         it('should return correct size 0', function()
         {
             var t = new Tensor();
@@ -81,6 +86,19 @@ describe('tensor.js', function()
             var s = t.getShape();
             assert.isArray(s);
             expect(s).to.be.equalTo([2, 3, 0]);
+        });
+        it('should return correct shape (from object)', function()
+        {
+            var t = new Tensor({shape: [7, 3, 5]});
+            var s = t.getShape();
+            assert.isArray(s);
+            expect(s).to.be.equalTo([7, 3, 5]);
+        });
+        it('should return correct shape and data', function()
+        {
+            var t = new Tensor({data: [[1, 2, 3, 4]], shape: [2, 2]});
+            expect(t.getShape()).to.be.equalTo([2, 2]);
+            expect(t._data).to.be.equalTo([1, 2, 3, 4]);
         });
     });
     describe('copy', function()
