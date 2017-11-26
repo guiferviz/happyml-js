@@ -197,6 +197,34 @@ describe('tensor.js', function()
             expect(t2._data).to.be.equalTo([2, 1, 2, 1, 2, 1]);
             expect(t2.getShape()).to.be.equalTo([3, 2]);
         });
+        it('should return correct dot product between tensor and vector', function()
+        {
+            var t1 = new Tensor([[[1,2],[3,4]], [[5,6],[7,8]]]);
+            var t2 = new Tensor([1, 2]);
+            var t3 = t2.dot(t1);
+            assert(t3 instanceof Tensor);
+            expect(t3.getShape()).to.be.equalTo([2, 2]);
+            expect(t3._data).to.be.equalTo([7, 10, 19, 22]);
+            // t1 and t2 must be intact.
+            expect(t1._data).to.be.equalTo([1, 2, 3, 4, 5, 6, 7, 8]);
+            expect(t1.getShape()).to.be.equalTo([2, 2, 2]);
+            expect(t2._data).to.be.equalTo([1, 2]);
+            expect(t2.getShape()).to.be.equalTo([2]);
+        });
+        it('should return correct dot product between vector and tensor', function()
+        {
+            var t1 = new Tensor([[[1,2],[3,4]], [[5,6],[7,8]]]);
+            var t2 = new Tensor([1, 2]);
+            var t3 = t1.dot(t2);
+            assert(t3 instanceof Tensor);
+            expect(t3.getShape()).to.be.equalTo([2, 2]);
+            expect(t3._data).to.be.equalTo([5, 11, 17, 23]);
+            // t1 and t2 must be intact.
+            expect(t1._data).to.be.equalTo([1, 2, 3, 4, 5, 6, 7, 8]);
+            expect(t1.getShape()).to.be.equalTo([2, 2, 2]);
+            expect(t2._data).to.be.equalTo([1, 2]);
+            expect(t2.getShape()).to.be.equalTo([2]);
+        });
     });
     describe('shapes', function()
     {

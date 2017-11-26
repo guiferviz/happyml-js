@@ -312,13 +312,17 @@ module.exports = (function (m)
 		for (var i = this._ndims - 1; i >= 0; --i)
 		{
 			if (coords[i] == -1)
+			{
 				continue;
+			}
 			else if (++coords[i] == this._shape[i])
 			{
 				coords[i] = 0;
 				if (i > 0)
-					idx -= this._increments[i - 1] - 1;
-				if (i == 0)
+				{
+					idx -= this._increments[i - 1] - this._increments[i];
+				}
+				else // (i == 0)
 					return -1;
 			}
 			else
@@ -448,16 +452,14 @@ module.exports = (function (m)
 	Tensor.prototype.apply = function (func)
 	{
 		var newTensor = new Tensor(...this._shape);
-		var coordNew = new Array(newTensor._ndims).fill(0);
-		var idxNew = newTensor._offset;
+		var idxNew = 0;
 		var coord = new Array(this._ndims).fill(0);
 		var idx = this._offset;
 		do
 		{
-			newTensor._data[idxNew] = func(this._data[idx]);
+			newTensor._data[idxNew++] = func(this._data[idx]);
 		}
-		while ((idx = this.next(coord, idx)) != -1 &&
-		       (idxNew = newTensor.next(coordNew, idxNew)) != -1);
+		while ((idx = this.next(coord, idx)) != -1);
 
 		return newTensor;
 	};
@@ -465,30 +467,28 @@ module.exports = (function (m)
 	Tensor.prototype.apply2 = function (t, func)
 	{
 		var newTensor = new Tensor(...this._shape);
-		var coordNew = new Array(newTensor._ndims).fill(0);
-		var idxNew = newTensor._offset;
+		var idxNew = 0;
 		var coordA = new Array(this._ndims).fill(0);
 		var idxA = this._offset;
 		var coordB = new Array(t._ndims).fill(0);
 		var idxB = t._offset;
 		do
 		{
-			newTensor._data[idxNew] = func(this._data[idxA], t._data[idxB]);
+			newTensor._data[idxNew++] = func(this._data[idxA], t._data[idxB]);
 		}
 		while ((idxA = this.next(coordA, idxA)) != -1 &&
-		       (idxB = t.next(coordB, idxB)) != -1 &&
-		       (idxNew = newTensor.next(coordNew, idxNew)) != -1);
+		       (idxB = t.next(coordB, idxB)) != -1);
 
 		return newTensor;
 	};
 
 	Tensor.prototype.dot = function (t)
 	{
-		// A.dot(B), A = this, B = t
+		// Compute A.dot(B), where A = this, B = t
 		var dimA = this._ndims - 1;
 		var dimB = t._ndims - 2 >= 0 ? t._ndims - 2 : 0;
-		var cSizeA = this._increments[dimA];
-		var cSizeB = t._increments[dimB];
+		var incSizeA = this._increments[dimA];
+		var incSizeB = t._increments[dimB];
 		console.assert(this._shape[dimA] == t._shape[dimB]);
 
 		// Compute output shape.
@@ -503,26 +503,27 @@ module.exports = (function (m)
 			outputShape.push(1);
 
 		var newTensor = new Tensor(...outputShape);
+		var idxNew = 0;
 		var coordA = new Array(this._ndims).fill(0);
 		coordA[dimA] = -1;
 		var idxA = this._offset;
 		var coordB = new Array(t._ndims).fill(0);
 		coordB[dimB] = -1;
-		var coordNew = new Array(newTensor._ndims).fill(0);
-		var idxNew = newTensor._offset;
 		do
 		{
 			var idxB = t._offset;
 			do
 			{
 				var sum = 0;
+				var _idxA = idxA,
+				    _idxB = idxB;
 				for (i = 0; i < this._shape[dimA]; ++i)
 				{
-					sum += this._data[idxA + i * cSizeA] *
-				    		  t._data[idxB + i * cSizeB];
+					sum += this._data[_idxA] * t._data[_idxB];
+				    _idxA += incSizeA;
+				    _idxB += incSizeB;
 				}
-				newTensor._data[idxNew] = sum;
-				idxNew = newTensor.next(coordNew, idxNew);
+				newTensor._data[idxNew++] = sum;
 			}
 			while ((idxB = t.next(coordB, idxB)) != -1);
 		}
