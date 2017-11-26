@@ -62,7 +62,8 @@ module.exports = (function (m)
 	    this._increments = tensor._increments.slice();
 	    this._offset = tensor._offset;
 	    // shallow or deep copy
-	    this._data = shallow ? tensor._data : tensor._data.slice();
+	    // TODO: iterate instead of slice only when no contiguous data.
+	    this._data = shallow ? tensor._data.slice() : tensor._data;
 	};
 
 	/**
@@ -370,6 +371,14 @@ module.exports = (function (m)
 		this._setShape();
 	};
 
+	Tensor.prototype.flatten = function ()
+	{
+		var newTensor = new Tensor(this);
+		newTensor._shape = [this._size];
+		
+		return newTensor;
+	};
+
 	/**
 	 * Return a string representation of the tensor.
 	 * 
@@ -420,23 +429,23 @@ module.exports = (function (m)
 	};
 
 	/**
-	 * Depth copy of the tensor, that is, creates a new data array.
+	 * Deep copy of the tensor, that is, creates a new data array.
 	 * 
-	 * @returns {object} Depth copy of the tensor.
+	 * @returns {object} Deep copy of the tensor.
 	 */
-	Tensor.prototype.clone = function ()
+	Tensor.prototype.deepcopy = function ()
 	{
-		return new Tensor(this, false);
+		return new Tensor(this, true);
 	};
 
 	/**
 	 * Shallow copy of the tensor, i.e., reuse the underlying data array.
 	 * 
-	 * @returns {object} Depth copy of the tensor.
+	 * @returns {object} Shallow copy of the tensor.
 	 */
-	Tensor.prototype.shallowClone = function ()
+	Tensor.prototype.copy = function ()
 	{
-		return new Tensor(this, true);
+		return new Tensor(this, false);
 	};
 
 	Tensor.prototype.add = function (t)

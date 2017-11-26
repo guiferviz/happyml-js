@@ -88,35 +88,35 @@ describe('tensor.js', function()
         it('shallow copy', function()
         {
             var t = new Tensor([1, 2]);
-            var tClone = t.shallowClone();
+            var tClone = t.copy();
             t.set(0, 0);
             assert(tClone.get(0) == 0);
         });
         it('shallow copy constructor', function()
         {
             var t = new Tensor([1, 2]);
-            var tClone = new Tensor(t, true);
+            var tClone = new Tensor(t);
             t.set(0, 0);
             assert(tClone.get(0) == 0);
         });
         it('deep copy', function()
         {
             var t = new Tensor([1, 2]);
-            var tClone = t.clone();
+            var tClone = t.deepcopy();
             t.set(0, 0);
             assert(tClone.get(0) == 1);
         });
         it('deep copy constructor', function()
         {
             var t = new Tensor([1, 2]);
-            var tClone = new Tensor(t);
+            var tClone = new Tensor(t, true);
             t.set(0, 0);
             assert(tClone.get(0) == 1);
         });
         it('copies should return correct shape', function()
         {
             var t = new Tensor(7, 3, 5);
-            var tClone = t.clone();
+            var tClone = t.copy();
             var s = tClone.getShape();
             assert.isArray(s);
             expect(s).to.be.equalTo([7, 3, 5]);
@@ -259,6 +259,14 @@ describe('tensor.js', function()
             }
 
             expect(throwError).to.throw(Error);
+        });
+        it('flatten', function()
+        {
+            var t = new Tensor([[2], [3]]);
+            var t2 = t.flatten();
+            expect(t2.getShape()).to.be.equalTo([2]);
+            // t must be intact.
+            expect(t.getShape()).to.be.equalTo([2, 1]);
         });
     });
     describe('set-get-index', function()
