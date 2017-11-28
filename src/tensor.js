@@ -85,9 +85,9 @@ module.exports = (function (m)
 	 * deep copies make a copy of that array.
 	 * 
 	 * @param {Tensor} Tensor to clone.
-	 * @param {boolean} If true, shallow copy, else deep copy.
+	 * @param {boolean} If false, shallow copy, else deep copy.
 	 */
-	Tensor.prototype._initCopy = function (tensor, shallow)
+	Tensor.prototype._initCopy = function (tensor, deepcopy)
 	{
 	    this._size = tensor._size;
 		this._shape = tensor._shape.slice();
@@ -95,8 +95,18 @@ module.exports = (function (m)
 	    this._increments = tensor._increments.slice();
 	    this._offset = tensor._offset;
 	    // shallow or deep copy
-	    // TODO: iterate instead of slice only when no contiguous data.
-	    this._data = shallow ? tensor._data.slice() : tensor._data;
+	    if (deepcopy)
+	    {
+	    	this._data = new Float64Array(this._size);
+	    	var idxNew = 0;
+			var coord = new Array(tensor._ndims).fill(0);
+			var idx = tensor._offset;
+			do
+				this._data[idxNew++] = tensor._data[idx];
+			while ((idx = tensor.next(coord, idx)) != -1);
+	    }
+	    else
+	        this._data = tensor._data;
 	};
 
 	/**
@@ -422,7 +432,7 @@ module.exports = (function (m)
 
 	Tensor.prototype.flatten = function ()
 	{
-		var newTensor = new Tensor(this);
+		var newTensor = this.deepcopy();
 		newTensor._shape = [this._size];
 		
 		return newTensor;
