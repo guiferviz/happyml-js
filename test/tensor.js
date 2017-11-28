@@ -370,5 +370,10 @@ describe('tensor.js', function()
             expect(console.log).to.be.called;
             console.log.restore();
         });
+        it('should return correct to string after slice', function()
+        {
+            var t = new Tensor([[0, 11], [22, 33]]);
+            assert(t.slice(1).toString() == "[22, 33]");
+        });
     });
 });

@@ -101,9 +101,8 @@ module.exports = (function (m)
 	        shape[i] = arg;
 	    }
 
-	    this._shape = shape;
 	    this._offset = 0;
-	    this._setShape();
+	    this._setShape(shape);
 	    this._data = new Float64Array(this._size);
 	};
 
@@ -116,9 +115,10 @@ module.exports = (function (m)
 	    this._shape = new Array(0);
 
 	    var flatten = [];
-	    this._parseData(data, flatten, 0);
+	    var shape = [];
+	    this._parseData(data, flatten, shape, 0);
 
-	    this._setShape();
+	    this._setShape(shape);
 	    this._offset = 0;
 		this._data = new Float64Array(flatten);
 	};
@@ -126,7 +126,7 @@ module.exports = (function (m)
 	/**
 	 * Recursive function that reads data and inits tensor.
 	 */
-    Tensor.prototype._parseData = function (data, flatten, depth)
+    Tensor.prototype._parseData = function (data, flatten, shape, depth)
     {
         // Base case.
         if (typeof data == "number")
@@ -136,33 +136,32 @@ module.exports = (function (m)
         }
 
         // Recursion.
-        if (this._shape.length <= depth)
-            this._shape.push(data.length);
-        else if (this._shape[depth] != data.length)
+        if (shape.length <= depth)
+            shape.push(data.length);
+        else if (shape[depth] != data.length)
             throw new Error("Dimensions at the same level must match");
         for (var i = 0; i < data.length; ++i)
         {
-            this._parseData(data[i], flatten, depth + 1);
+            this._parseData(data[i], flatten, shape, depth + 1);
         }
     };
 
     /**
      * Set the total size and cumulative sizes.
      */
-    Tensor.prototype._setShape = function ()
+    Tensor.prototype._setShape = function (shape)
     {
         var size = 1;
-        var ndims = this._shape.length;
+        var ndims = shape.length;
 	    var increments = new Array(ndims);
 
 	    for (var i = ndims - 1; i >= 0; i--)
 	    {
 	    	increments[i] = size;
-	        size *= this._shape[i];
+	        size *= shape[i];
 	    }
 
-		// TODO: check sizes are the same.
-
+		this._shape = shape;
         this._ndims = ndims;
 	    this._size = ndims == 0 ? 0 : size;
 	    this._increments = increments;
@@ -241,19 +240,17 @@ module.exports = (function (m)
 		var newShape = [];
 		var newIncrements = [];
 		var size = 1;
-		for (var i = 0; i < coords.length; ++i)
+		var offset = 0;
+		for (var i = 0; i < this._ndims; ++i)
 		{
-			if (coords[i] == -1)
+			if (i >= coords.length || coords[i] == -1)
 			{
 				size *= this._shape[i];
 				newShape.push(this._shape[i]);
 				newIncrements.push(this._increments[i]);
 			}
-		}
-		var offset = 0;
-		for (var j = coords.length - 1; j >= 0 && coords[j] != -1; --j)
-		{
-			offset += this._increments[j - 1] - 1;
+			else
+				offset += coords[i] * this._increments[i];
 		}
 
 		newTensor._data = this._data;
@@ -336,7 +333,7 @@ module.exports = (function (m)
 				coords[i] = 0;
 				if (i > 0)
 				{
-					idx -= this._increments[i - 1] - this._increments[i];
+					idx -= this._increments[i] * (this._shape[i] - 1);
 				}
 				else // (i == 0)
 					return -1;
@@ -370,7 +367,10 @@ module.exports = (function (m)
 				inferSize = i;
 			}
 			else
+			{
+				shape[i] = newShape[i];
 				size *= newShape[i];
+			}
 
 		if (inferSize != -1)
 		{
@@ -382,8 +382,7 @@ module.exports = (function (m)
 		if (size != this._size)
 			throw new Error("Size must be the same after reshape");
 
-		this._shape = shape;
-		this._setShape();
+		this._setShape(shape);
 	};
 
 	Tensor.prototype.flatten = function ()
@@ -401,15 +400,17 @@ module.exports = (function (m)
 	 */
 	Tensor.prototype.toString = function ()
 	{
-		return this._toString(0, 0, "\n ").value;
+		var coord = new Array(this._ndims).fill(0);
+		var idx = this._offset;
+		return this._toString(0, coord, idx, "\n ").value;
 	};
 
-	Tensor.prototype._toString = function (dim, idx, scope)
+	Tensor.prototype._toString = function (dim, coord, idx, scope)
 	{
 		// Base case.
 		if (dim == this._ndims)
 			return {
-				idx: idx + 1,
+				idx: this.next(coord, idx),
 				value: this._data[idx]
 			};
 
@@ -418,7 +419,7 @@ module.exports = (function (m)
 		var dim_size = this._shape[dim];
 		for (var i = 0; i < dim_size; i++)
 		{
-			var res = this._toString(dim + 1, idx, scope + " ");
+			var res = this._toString(dim + 1, coord, idx, scope + " ");
 			idx = res.idx;
 			out += res.value;
 			if (i != dim_size - 1)  // if no last value of dimension
