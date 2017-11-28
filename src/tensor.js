@@ -351,6 +351,7 @@ module.exports = (function (m)
 				coords[i] = 0;
 				if (i > 0)
 				{
+					// The next multiplication can be precomputed.
 					idx -= this._increments[i] * (this._shape[i] - 1);
 				}
 				else // (i == 0)
@@ -503,9 +504,14 @@ module.exports = (function (m)
 		return this.apply2(t, function (a, b) { return a + b; });
 	};
 
-	Tensor.prototype.subtract = function (t)
+	Tensor.prototype.sub = function (t)
 	{
 		return this.apply2(t, function (a, b) { return a - b; });
+	};
+
+	Tensor.prototype.mul = function (t)
+	{
+		return this.apply2(t, function (a, b) { return a * b; });
 	};
 
 	Tensor.prototype.apply = function (func)

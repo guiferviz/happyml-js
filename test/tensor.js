@@ -178,9 +178,20 @@ describe('tensor.js', function()
         {
             var t1 = new Tensor([[1, 2], [3, 4]]);
             var t2 = new Tensor([[4, 3], [2, 1]]);
-            var t3 = t1.subtract(t2);
+            var t3 = t1.sub(t2);
             assert(t3 instanceof Tensor);
             expect(t3._data).to.be.equalTo([-3, -1, 1, 3]);
+            // t1 and t2 must be intact.
+            expect(t1._data).to.be.equalTo([1, 2, 3, 4]);
+            expect(t2._data).to.be.equalTo([4, 3, 2, 1]);
+        });
+        it('should return correct multiplication', function()
+        {
+            var t1 = new Tensor([[1, 2], [3, 4]]);
+            var t2 = new Tensor([[4, 3], [2, 1]]);
+            var t3 = t1.mul(t2);
+            assert(t3 instanceof Tensor);
+            expect(t3._data).to.be.equalTo([4, 6, 6, 4]);
             // t1 and t2 must be intact.
             expect(t1._data).to.be.equalTo([1, 2, 3, 4]);
             expect(t2._data).to.be.equalTo([4, 3, 2, 1]);
