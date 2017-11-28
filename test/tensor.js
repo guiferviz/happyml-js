@@ -101,6 +101,27 @@ describe('tensor.js', function()
             expect(t._data).to.be.equalTo([1, 2, 3, 4]);
         });
     });
+    describe('helper constructors', function()
+    {
+        it('should return correct range without start', function()
+        {
+            var t = Tensor.range(5);
+            expect(t.getShape()).to.be.equalTo([5]);
+            expect(t._data).to.be.equalTo([0, 1, 2, 3, 4]);
+        });
+        it('should return correct range with start and end', function()
+        {
+            var t = Tensor.range(5, 10);
+            expect(t.getShape()).to.be.equalTo([5]);
+            expect(t._data).to.be.equalTo([5, 6, 7, 8, 9]);
+        });
+        it('should return correct range with negative increments', function()
+        {
+            var t = Tensor.range(5, 0, -1);
+            expect(t.getShape()).to.be.equalTo([5]);
+            expect(t._data).to.be.equalTo([5, 4, 3, 2, 1]);
+        });
+    });
     describe('copy', function()
     {
         it('shallow copy', function()
@@ -248,9 +269,11 @@ describe('tensor.js', function()
     {
         it('correct reshape', function()
         {
-            var t = new Tensor(2, 3, 1);
-            t.reshape(3, 2);
-            expect(t.getShape()).to.be.equalTo([3, 2]);
+            var t1 = new Tensor(2, 3, 1);
+            var t2 = t1.reshape(3, 2);
+            expect(t2.getShape()).to.be.equalTo([3, 2]);
+            // t1 must be intact.
+            expect(t1.getShape()).to.be.equalTo([2, 3, 1]);
         });
         it('size must be the same after reshape', function()
         {
@@ -264,9 +287,11 @@ describe('tensor.js', function()
         });
         it('infer size', function()
         {
-            var t = new Tensor(2, 3);
-            t.reshape(3, -1);
-            expect(t.getShape()).to.be.equalTo([3, 2]);
+            var t1 = new Tensor(2, 3);
+            var t2 = t1.reshape(3, -1);
+            expect(t2.getShape()).to.be.equalTo([3, 2]);
+            // t1 must be intact.
+            expect(t1.getShape()).to.be.equalTo([2, 3]);
         });
         it('infer more than one size', function()
         {

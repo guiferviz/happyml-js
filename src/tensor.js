@@ -42,13 +42,31 @@ module.exports = (function (m)
 			{
 				this._initFromData(params.data);
 				if (!!params.shape)
-					this._reshape(params.shape);
+					this._reshapeThis(params.shape);
 			}
 			else if (!!params.shape)
 				this._initFromShape(params.shape);
 			else
 				this._initVoid();
 		}
+	};
+
+	Tensor.range = function (start, end, increments)
+	{
+		if (end == undefined)
+		{
+			end = start;
+			start = 0;
+		}
+		increments = increments || 1;
+
+		var size = Math.abs((end - start) / increments);
+		var t = new Tensor(size);
+		for (var i = 0, value = start; i < size; ++i, value += increments)
+		{
+			t._data[i] = value;
+		}
+		return t;
 	};
 
 	Tensor.prototype._initVoid = function ()
@@ -349,16 +367,32 @@ module.exports = (function (m)
 
 	Tensor.prototype.reshape = function ()
 	{
-		this._reshape(arguments);
+		return this._reshape(arguments);
 	};
 
 	Tensor.prototype._reshape = function (newShape)
 	{
-		var inferSize = -1;
+		var t = this.copy();
+		var shape = this._checkShape(newShape);
 
+		t._setShape(shape);
+
+		return t;
+	};
+
+	Tensor.prototype._reshapeThis = function (newShape)
+	{
+		var shape = this._checkShape(newShape);
+		this._setShape(shape);
+	};
+
+	Tensor.prototype._checkShape = function (newShape)
+	{
+		var inferSize = -1;
 		var size = 1;
 		var ndims = newShape.length;
 		var shape = new Array(ndims);
+
 		for (var i = ndims - 1; i >= 0; --i)
 			if (newShape[i] == -1)
 			{
@@ -382,7 +416,7 @@ module.exports = (function (m)
 		if (size != this._size)
 			throw new Error("Size must be the same after reshape");
 
-		this._setShape(shape);
+		return shape;
 	};
 
 	Tensor.prototype.flatten = function ()
