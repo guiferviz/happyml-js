@@ -74,12 +74,12 @@ module.exports = (function (m)
 		samples = samples || 10;
 
 		var increment = Math.abs((end - start) / samples);
-		var t = new Tensor(samples);
-		for (var i = 0, value = start; i < samples; ++i, value += increment)
+		var t = new Tensor(samples + 1);
+		for (var i = 0, value = start; i <= samples; ++i, value += increment)
 		{
 			t._data[i] = value;
 		}
-		t._data[samples - 1] = end;
+		t._data[samples] = end;
 		return t;
 	};
 

@@ -2,12 +2,39 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <script src="../build/happyml.min.js"></script>
+        <meta http-equiv="content-type" content="application/xhtml+xml; charset=utf-8" />
+        <script src="../build/happyml.js"></script>
         <script>
-            console.log(happyml);
+        window.addEventListener("load", function()
+        {
+            happyml.plot.init("#container", {
+                margin: {top: 25, left: 35, right: 10, bottom: 35},
+                limits: {xmin: -5, xmax: 5, ymin: -5, ymax: 5},
+                xlabel: "Eje x",
+                ylabel: "Eje y",
+                title: "Gráfico chulo"
+            });
+            var x = new happyml.Tensor.linspace(-5, 5, 50);
+            var y1 = x.apply(function (x) { return x; });
+            var y2 = x.apply(function (x) { return x * x; });
+            var y3 = x.apply(function (x) { return x * x * x; });
+            happyml.plot.line(x, y1);
+            happyml.plot.scatter(x, y1);
+            happyml.plot.line(x, y2);
+            happyml.plot.scatter(x, y2);
+            happyml.plot.line(x, y3);
+            happyml.plot.scatter(x, y3);
+        });
         </script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.9.0-alpha2/katex.min.css">
+        <style>
+            body {
+                background-color: gray;
+            }
+        </style>
     </head>
     <body>
         <h1>HappyML-JS examples</h1>
+        <div id="container"></div>
     </body>
 </html>

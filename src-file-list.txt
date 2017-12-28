@@ -1,1 +1,1 @@
-src/start.js src/tensor.js src/end.js
+src/start.js src/tensor.js src/plot.js src/end.js
